@@ -35,7 +35,7 @@ print("torch", torch.__version__, "cuda:", torch.cuda.is_available(), torch.cuda
 from huggingface_hub import snapshot_download
 for repo, skip in [("meta-llama/Meta-Llama-3-8B", ["original/*", "*.pth", "*.bin"]),   # original/ = 16 GB duplicate
                    ("Qwen/Qwen3-8B", ["*.bin"]),
-                   ("gpt2", ["*.h5", "*.msgpack", "*.onnx", "*.tflite"]),
+                   ("openai-community/gpt2", ["*.h5", "*.msgpack", "*.onnx", "*.tflite", "*.bin"]),
                    ("sentence-transformers/all-MiniLM-L6-v2", ["onnx/*", "openvino/*"])]:
     print("downloading", repo, "...", flush=True)
     p = snapshot_download(repo, ignore_patterns=skip)

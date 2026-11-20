@@ -12,6 +12,7 @@ import torch
 from data import load_jsonl
 
 SBERT = "sentence-transformers/all-MiniLM-L6-v2"
+GPT2 = "openai-community/gpt2"   # canonical id of "gpt2" (the bare alias fails to download with newer huggingface_hub)
 DEV = "cuda" if torch.cuda.is_available() else "cpu"
 _models = {}
 
@@ -25,8 +26,8 @@ def ex_text(ex):
 def ppl(texts):
     if "gpt2" not in _models:
         from transformers import AutoModelForCausalLM, AutoTokenizer
-        _models["gpt2"] = (AutoModelForCausalLM.from_pretrained("gpt2").to(DEV).eval(),
-                           AutoTokenizer.from_pretrained("gpt2"))
+        _models["gpt2"] = (AutoModelForCausalLM.from_pretrained(GPT2).to(DEV).eval(),
+                           AutoTokenizer.from_pretrained(GPT2))
     model, tok = _models["gpt2"]
     out = []
     for t in texts:
