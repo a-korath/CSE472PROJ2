@@ -11,13 +11,14 @@ module load mamba/latest
 mkdir -p /scratch/$USER/envs
 conda config --append envs_dirs /scratch/$USER/envs 2>/dev/null || true   # so `source activate ue` finds it by name
 if [ ! -d /scratch/$USER/envs/ue ]; then mamba env create -p /scratch/$USER/envs/ue -f environment.yml; fi
-source activate /scratch/$USER/envs/ue
+export PATH=/scratch/$USER/envs/ue/bin:$PATH   # `source activate` is a no-op in non-interactive shells on Sol
+python -c 'import huggingface_hub' || { echo 'ERROR: env not usable'; exit 1; }
 set -u
 export HF_HOME=${HF_HOME:-/scratch/$USER/hf}
 mkdir -p "$HF_HOME" logs results adapters
 if ! python -c "from huggingface_hub import get_token; import sys; sys.exit(0 if get_token() else 1)"; then
   echo "Env ready. Now log in to Hugging Face (token is saved under HF_HOME=$HF_HOME), then re-run this script:"
-  echo "  source activate ue && huggingface-cli login && bash setup_sol.sh"
+  echo "  export PATH=/scratch/\$USER/envs/ue/bin:\$PATH && hf auth login && bash setup_sol.sh"
   exit 2
 fi
 python - <<'PY'

@@ -101,8 +101,8 @@ git log -1 --oneline                       # must be the "Sol: QoS class, mamba 
 bash setup_sol.sh
 
 # 4.4 Hugging Face login (paste the Read token; answer "n" to "add as git credential")
-source activate ue
-huggingface-cli login
+export PATH=/scratch/$USER/envs/ue/bin:$PATH   # activate the env (works in any shell)
+hf auth login
 
 # 4.5 Run setup again: checks the GPU and downloads Llama-3-8B, Qwen3-8B, gpt2, all-MiniLM-L6-v2, WordNet
 bash setup_sol.sh

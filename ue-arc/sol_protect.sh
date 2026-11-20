@@ -14,8 +14,10 @@
 set -eo pipefail   # -u is turned on after env activation: conda/mamba activate scripts read unset vars
 
 # Sol: module env + scratch cache. Anywhere else (RunPod, Colab): `HF_HOME=... bash -e` in an env with requirements.txt
-if command -v module >/dev/null; then module load mamba/latest; source activate ue || source activate /scratch/$USER/envs/ue; fi   # check: module avail mamba
+# Env: put its bin/ first on PATH. (`source activate` is a no-op in non-interactive shells on Sol, so it can't be used here.)
+export PATH=/scratch/$USER/envs/ue/bin:$PATH
 set -u
+python -c 'import torch, transformers, peft' || { echo "ERROR: env /scratch/$USER/envs/ue missing or broken; run setup_sol.sh"; exit 1; }
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false   # compute nodes: read the pre-downloaded cache only
 export HF_HOME=${HF_HOME:-/scratch/$USER/hf}   # weights pre-downloaded here from the login node
 LLAMA=${LLAMA:-meta-llama/Meta-Llama-3-8B}
