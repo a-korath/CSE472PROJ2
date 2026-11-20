@@ -42,6 +42,16 @@ for the stealthiness numbers and the trade-off plot.
 An 8B model in bf16 is ~16 GB of weights and doesn't fit. The only way to use this card is 4-bit QLoRA, which breaks the
 "same bf16 settings" rule, so it must be disclosed. It also needs a CUDA 12.8 build of torch (Blackwell).
 
+## Not in the repo (gitignored; regenerate locally)
+| Path | What | How to get it |
+|------|------|---------------|
+| `.venv/` | Python env (~1.1 GB) | `python -m venv .venv && pip install -r requirements.txt` |
+| `__pycache__/` | Python bytecode | Created automatically |
+| `adapters/` | Trained LoRA weights (only `adapters/dry` so far: Qwen3-0.6B smoke test) | `train_lora.py` (dry-run command above) / `sol_*.sh` |
+| `protected/ckpt_r*/` | Per-round surrogate LoRA checkpoints | `sol_protect.sh` |
+
+8B adapters are ~80-170 MB each (GitHub's limit is 100 MB per file), so share them via Drive/HF Hub, not git.
+
 ## Fixed settings (state these in the report)
 - Prompt: `Question: ...\nA. ...\nB. ...\nAnswer:` with the target ` X`; no chat template, same for all models.
 - Loss: next-token cross-entropy on the answer-letter token only.

@@ -2,3 +2,4 @@
 __pycache__/
 ue-arc/adapters/
 .DS_Store
+ue-arc/protected/ckpt_*/
