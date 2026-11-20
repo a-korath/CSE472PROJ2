@@ -168,7 +168,7 @@ Use Dashboard → **Clusters → Sol Shell Access** (a login node; fine for moni
 | `sacct -j <ID> --format=JobID,State,Elapsed,MaxRSS` | after it ends: COMPLETED / FAILED / TIMEOUT / CANCELLED |
 | `scancel <ID>` | cancel a job |
 
-You'll also get Slurm emails when jobs start and end (`--mail-type=ALL` isn't set; add `#SBATCH --mail-type=END,FAIL` if you want them).
+Want an email when a job ends or fails? Add `--mail-type=END,FAIL` to the `sbatch` line (it goes to your ASU address).
 
 ---
 
