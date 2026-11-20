@@ -15,13 +15,16 @@ Arjun (protection 2078108, victims 2078235). Updated 2026-11-20.
 
 Fine-tuning gain (clean − zero-shot): Llama **+5.15**, Qwen3-8B +1.82, Qwen3-8B-Base +0.23.
 
+Round-0 protected set (Li et al. Error-min-0: perturbations from the untrained surrogate, before any min-min training),
+Llama only: **79.81 ± 1.30** (seeds 78.67 / 79.52 / 81.23), the same as r5 (80.03) and random (80.18). Running more rounds did not help.
+
 ## Readability and edit statistics (training set, 1,119 questions)
 
 | Set | Edits / question | Questions edited | Where edits land (question / correct choice / wrong choice) | SBERT ↑ | GPT-2 PPL ratio ↓ |
 |---|---|---|---|---|---|
 | Random (k ≤ 2) | 1.87 | 100% | 51% / 13% / 37% | 0.970 | 1.13 |
-| Protected r0 | 1.26 | 82% | 52% / 16% / 32% | TODO | TODO |
-| Protected r5 (final) | 1.18 | 79% | 53% / 23% / 24% | TODO | TODO |
+| Protected r0 | 1.26 | 82% | 52% / 16% / 32% | 0.974 | 1.09 |
+| Protected r5 (final) | 1.18 | 79% | 53% / 23% / 24% | 0.976 | 1.08 |
 | Hint ("!" on correct choice) | 1.00 | 100% | 0% / 100% / 0% | 0.995 | 1.16 |
 
 Pattern check (Li et al. Table 1/2 analogue), replacement words grouped by answer letter: Jaccard overlap between
@@ -53,8 +56,8 @@ round (r5: 0.0068 vs 0.213). Smoke test on 16 questions: surrogate 100% after on
   overshoot** (−26.0: the hint does not just remove the gain, it damages the model).
 
 ## Still to do
-- [ ] `python metrics.py data/train.jsonl protected/r0.jsonl protected/final.jsonl` → fill the two TODO rows (~2 min, any GPU).
-- [ ] Round-0 victims on Llama: `MODELS="meta-llama/Meta-Llama-3-8B" SETS="protected_r0" sbatch sol_extra.sh` (~12 min).
+- [x] `python metrics.py data/train.jsonl protected/r0.jsonl protected/final.jsonl` → `results/metrics_protected.jsonl`.
+- [x] Round-0 victims on Llama (job 2122972): 79.81 ± 1.30.
 - [ ] Trade-off plot (accuracy vs SBERT; one point per set/round).
 - [ ] Hand-label 50 protected + 50 random edits (meaning kept / changed), both teammates.
 - [ ] Report + 2-slide deck (Nov 30).
