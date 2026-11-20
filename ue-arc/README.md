@@ -15,12 +15,13 @@ python train_lora.py --model Qwen/Qwen3-0.6B --limit 16 --epochs 1 --bs 4 \
 Pass = both commands finish and print an accuracy. The numbers themselves mean nothing at this size.
 
 ## Sol booking 1
-1. On the login node: `huggingface-cli login`, then
-   `python -c "import nltk; nltk.download('wordnet')"` (compute nodes may have no internet), then
-   `HF_HOME=/scratch/$USER/hf huggingface-cli download meta-llama/Meta-Llama-3-8B` and the same for `Qwen/Qwen3-8B`.
-2. Copy `data/` and `protected/neighbours.json` up, check the Sol-specific lines in `sol_baselines.sh`, then
-   `mkdir -p logs && sbatch sol_baselines.sh` (`logs/` must exist at submit time or SLURM drops the job's output).
+1. Login node, from `ue-arc/`: `export HF_HOME=/scratch/$USER/hf` **first** (the HF token is stored under `HF_HOME`),
+   then `huggingface-cli login`, then `bash setup_sol.sh` (creates the `ue` env and downloads Llama-3-8B, Qwen3-8B,
+   gpt2, all-MiniLM-L6-v2 and WordNet; the jobs run offline). Re-runnable.
+2. `sbatch --test-only sol_baselines.sh` (checks account/partition), then `sbatch sol_baselines.sh`.
    No Llama access yet? `LLAMA=NousResearch/Meta-Llama-3-8B sbatch sol_baselines.sh` (same weights, ungated; disclose it). Same for the other two scripts.
+
+All three jobs charge `class_cse47267488fall2026`, enable `set -u` only after env activation, and run with `HF_HUB_OFFLINE=1`.
 
 ## Laptop (CPU, no GPU needed), done before booking 2
 ```bash
@@ -30,11 +31,11 @@ python metrics.py data/train.jsonl data/random_k2.jsonl
 ```
 
 ## Sol booking 2: protection
-`sbatch sol_protect.sh` writes `protected/r{0..5}.jsonl`, one checkpoint per round, `rounds.jsonl` (the loss curve) and
+`sbatch sol_protect.sh` (12 h limit; runs all 5 rounds: `--stop_acc 1.01 --k 2`) writes `protected/r{0..5}.jsonl`, one checkpoint per round, `rounds.jsonl` (the loss curve) and
 `final.jsonl`. Resubmit if the slot is cut; it resumes at the last saved round.
 
 ## Sol booking 3: victims
-`sbatch sol_victims.sh` (`PROT=protected/r0.jsonl` to train on a different round), then
+`sbatch sol_victims.sh` (another set: `PROT=protected/r0.jsonl PNAME=protected_r0 sbatch sol_victims.sh`; PNAME keeps result files from colliding), then
 `python summarize.py results` for the table and `python metrics.py data/train.jsonl protected/r*.jsonl data/random_k2.jsonl`
 for the stealthiness numbers and the trade-off plot.
 

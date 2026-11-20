@@ -3,6 +3,7 @@
 # Resumable: any run whose result file exists is skipped, so a cut-off slot loses nothing.
 # CHECK the Sol-specific lines (partition, QoS, GPU flag, module name) against Sol docs before submitting.
 #SBATCH -J arc-baselines
+#SBATCH -A class_cse47267488fall2026   # CSE 472 course allocation
 #SBATCH -p general
 #SBATCH -q public
 #SBATCH -G a100:1
@@ -10,12 +11,14 @@
 #SBATCH --mem=64G
 #SBATCH -t 0-04:00
 #SBATCH -o logs/%x-%j.out
-set -euo pipefail
+set -eo pipefail   # -u is turned on after env activation: conda/mamba activate scripts read unset vars
 
 # Sol: module env + scratch cache. Anywhere else (RunPod, Colab): `HF_HOME=... bash -e` in an env with requirements.txt
 if command -v module >/dev/null; then module load mamba/latest; source activate ue; fi   # check: module avail mamba
-export HF_HOME=${HF_HOME:-/scratch/$USER/hf}   # weights pre-downloaded here from the login node
+set -u
 mkdir -p results adapters logs
+export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false   # compute nodes: read the pre-downloaded cache only
+export HF_HOME=${HF_HOME:-/scratch/$USER/hf}   # weights pre-downloaded here from the login node
 
 LLAMA=${LLAMA:-meta-llama/Meta-Llama-3-8B}   # gated; fallback: LLAMA=NousResearch/Meta-Llama-3-8B sbatch ...
 for M in "$LLAMA" Qwen/Qwen3-8B; do

@@ -1,8 +1,10 @@
 #!/bin/bash
 # Sol booking 3: victim fine-tunes on Random-edit and Protected data, both models x 3 seeds (12 runs).
 # Resumable: any run whose result file exists is skipped.
-# PROT picks which protected set the victims train on (default: last round). E.g. PROT=protected/r0.jsonl sbatch ...
+# PROT picks which protected set the victims train on (default: last round); PNAME names its results so runs never collide.
+# E.g. PROT=protected/r0.jsonl PNAME=protected_r0 sbatch sol_victims.sh   (hint bonus: PROT=data/hint.jsonl PNAME=hint)
 #SBATCH -J arc-victims
+#SBATCH -A class_cse47267488fall2026   # CSE 472 course allocation
 #SBATCH -p general
 #SBATCH -q public
 #SBATCH -G a100:1
@@ -10,17 +12,21 @@
 #SBATCH --mem=64G
 #SBATCH -t 0-05:00
 #SBATCH -o logs/%x-%j.out
-set -euo pipefail
+set -eo pipefail   # -u is turned on after env activation: conda/mamba activate scripts read unset vars
 
 # Sol: module env + scratch cache. Anywhere else (RunPod, Colab): `HF_HOME=... bash -e` in an env with requirements.txt
 if command -v module >/dev/null; then module load mamba/latest; source activate ue; fi   # check: module avail mamba
+set -u
+mkdir -p results adapters logs
+export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false   # compute nodes: read the pre-downloaded cache only
 export HF_HOME=${HF_HOME:-/scratch/$USER/hf}   # weights pre-downloaded here from the login node
 LLAMA=${LLAMA:-meta-llama/Meta-Llama-3-8B}
 PROT=${PROT:-protected/final.jsonl}
+PNAME=${PNAME:-protected}   # result-name for PROT; set it for any other set, e.g. PROT=protected/r0.jsonl PNAME=protected_r0
 
 for M in "$LLAMA" Qwen/Qwen3-8B; do
   T=$(basename "$M")
-  for D in random:data/random_k2.jsonl protected:$PROT; do
+  for D in random:data/random_k2.jsonl $PNAME:$PROT; do
     NAME=${D%%:*}; DATA=${D#*:}
     for S in 1 2 3; do
       [ -f results/${T}_${NAME}_s${S}.json ] || \
