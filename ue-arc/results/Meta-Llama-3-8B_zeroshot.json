@@ -1,0 +1,7 @@
+{
+    "model": "meta-llama/Meta-Llama-3-8B",
+    "adapter": null,
+    "data": "data/test.jsonl",
+    "n": 1172,
+    "accuracy": 0.7747440273037542
+}

@@ -1,0 +1,7 @@
+{
+    "model": "Qwen/Qwen3-8B",
+    "adapter": null,
+    "data": "data/test.jsonl",
+    "n": 1172,
+    "accuracy": 0.9104095563139932
+}

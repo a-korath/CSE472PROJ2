@@ -1,0 +1,1 @@
+{"file": "data/hint.jsonl", "n": 1119, "sbert": 0.9945505945889198, "ppl_orig": 99.67113412453742, "ppl": 110.66427029177238, "ppl_ratio": 1.155449658356169, "edits_per_ex": 1.0, "edit_share": {"question": 0.0, "correct": 1.0, "wrong": 0.0}}

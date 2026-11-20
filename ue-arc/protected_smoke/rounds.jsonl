@@ -1,0 +1,4 @@
+{"round": 0, "phase": "search", "clean_loss": 1.2460998000678956, "protected_loss": 0.18402586969023105, "edits_per_ex": 1.4375}
+{"round": 1, "phase": "train", "train_loss_last20": 0.18557051848620176}
+{"round": 1, "phase": "eval", "surrogate_train_acc": 1.0}
+{"round": 1, "phase": "search", "clean_loss": 0.8677825498771199, "protected_loss": 0.00406127943847423, "edits_per_ex": 1.5}
