@@ -1,0 +1,34 @@
+[transformers] Ignoring clean_up_tokenization_spaces=True for BPE tokenizer TokenizersBackend. The clean_up_tokenization post-processing step is designed for WordPiece tokenizers and is destructive for BPE (it strips spaces before punctuation). Set clean_up_tokenization_spaces=False to suppress this warning, or set clean_up_tokenization_spaces_for_bpe_even_though_it_will_corrupt_output=True to force cleanup anyway.
+wrote protected/neighbours.json
+.venv/bin/python protect.py --model NousResearch/Meta-Llama-3-8B --out    118.03s user 11.02s system 94% cpu 2:16.65 total
+dry ['dried', 'drying', 'warm', 'clean', 'cold', 'cool', 'flat', 'hot', 'dark', 'thin']
+increase ['increases', 'increased', 'increasing', 'improve', 'change', 'rise', 'enhance', 'decline', 'changes', 'improving']
+Earth ['Planet', 'World', 'Moon', 'Ground', 'Life', 'Death', 'Universe', 'Human', 'East', 'Sun']
+hot ['hotter', 'hottest', 'warm', 'heat', 'hard', 'high', 'soft', 'big', 'cool', 'red']
+larger ['bigger', 'large', 'largest', 'higher', 'greater', 'wider', 'broader', 'longer', 'stronger', 'older']
+faster ['quicker', 'fast', 'fastest', 'better', 'stronger', 'easier', 'harder', 'higher', 'shorter', 'bigger']
+up ['out', 'ups', 'off', 'over', 'back', 'on', 'away', 'into', 'in', 'to']
+more ['most', 'better', 'greater', 'much', 'higher', 'extra', 'other', 'further', 'longer', 'faster']
+W1118 14:50:35.844000 74745 .venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 6974.88it/s]
+[transformers] `loss_type=None` was set in the config but it is unrecognized. Using the default loss: `ForCausalLMLoss`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 7570.81it/s]
+0: [{'field': 0, 'word': 12, 'from': 'surface', 'to': 'water'}, {'field': 0, 'word': 0, 'from': 'George', 'to': 'William'}]
+100: [{'field': 2, 'word': 4, 'from': 'more', 'to': 'farther'}]
+200: [{'field': 4, 'word': 0, 'from': 'organize', 'to': 'recognize'}, {'field': 4, 'word': 1, 'from': 'data', 'to': 'variables'}]
+300: [{'field': 0, 'word': 13, 'from': 'book', 'to': 'program'}, {'field': 3, 'word': 1, 'from': 'plastic', 'to': 'silver'}]
+400: [{'field': 2, 'word': 2, 'from': 'humidity', 'to': 'water'}, {'field': 4, 'word': 7, 'from': 'years', 'to': 'year'}]
+500: [{'field': 2, 'word': 6, 'from': 'the', 'to': 'that'}]
+600: [{'field': 0, 'word': 0, 'from': 'The', 'to': 'El'}, {'field': 0, 'word': 5, 'from': 'crack', 'to': 'rock'}]
+700: [{'field': 1, 'word': 9, 'from': 'worldwide', 'to': 'daily'}, {'field': 3, 'word': 10, 'from': 'parts', 'to': 'components'}]
+800: [{'field': 0, 'word': 22, 'from': 'most', 'to': 'only'}, {'field': 0, 'word': 3, 'from': 'volume', 'to': 'length'}]
+900: [{'field': 3, 'word': 4, 'from': 'a', 'to': 'up'}]
+1000: [{'field': 3, 'word': 3, 'from': 'updated', 'to': 'improved'}, {'field': 0, 'word': 4, 'from': 'to', 'to': 'with'}]
+1100: [{'field': 3, 'word': 0, 'from': 'wheat', 'to': 'gold'}, {'field': 2, 'word': 0, 'from': 'tomato', 'to': 'potato'}]
+edits/example: 1.87
+.venv/bin/python random_edits.py --tokenizer NousResearch/Meta-Llama-3-8B      2689.51s user 147.11s system 130% cpu 36:19.80 total
+W1118 15:26:54.896000 75201 .venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/redirects.py:35] NOTE: Redirects are currently not supported in MacOs.
+Loading weights:   0%|          | 0/148 [00:00<?, ?it/s]Loading weights: 100%|██████████| 148/148 [00:00<00:00, 12835.90it/s]
+[transformers] `loss_type=None` was set in the config but it is unrecognized. Using the default loss: `ForCausalLMLoss`.
+Loading weights:   0%|          | 0/103 [00:00<?, ?it/s]Loading weights: 100%|██████████| 103/103 [00:00<00:00, 6780.72it/s]
+{"file": "data/random_k2.jsonl", "n": 1119, "sbert": 0.9699863833013233, "ppl_orig": 99.66839166922077, "ppl": 106.47731303562814, "ppl_ratio": 1.1308077648037589, "edits_per_ex": 1.866845397676497, "edit_share": {"question": 0.505026328386788, "correct": 0.12685495452369555, "wrong": 0.3681187170895165}}
