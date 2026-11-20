@@ -1,171 +1,213 @@
-# Sol runbook: get the training running
+# Sol runbook: from laptop to training jobs
 
-Who runs what:
-- **Aryan:** baselines (zero-shot + clean fine-tunes, both models × 3 seeds, plus a 16-question protection smoke test).
-- **Arjun:** protection (all 5 rounds), then victims (random + protected, both models × 3 seeds), chained automatically.
+Based on the CSE 472 Sol guide (`ASU_Sol_VSCode_Guideline.pdf`) and a tested connection on 2026-11-17
+(Windows + VS Code → compute node `sg024`, A100-SXM4-80GB).
 
-Each of you works in your **own** Sol account and scratch space. That doubles the GPUs you can run at once.
+**The idea:** you open **one short VS Code Tunnel session** (a compute node with a GPU) to set up and submit.
+The actual training runs as **batch jobs** that keep going after you close everything. Then you end the session.
 
----
-
-## Part 1. What the course allows us to request
-
-From the CSE 472 Sol guide (`ASU_Sol_VSCode_Guideline.pdf`, Step 5):
-
-| Setting | Course rule | What our jobs request |
+| Who | Submits | Runs for |
 |---|---|---|
-| Account | `class_cse47267488fall2026` | same (in every script) |
-| Partition | `htc` for work finishing within ~4 h; `public`/`general` for longer | baselines + victims → `htc`; protection → `general` |
-| CPU | start with 8 cores | 8 |
-| Memory | start with 64 GiB | 64 GiB |
-| GPU | `gpu:a100:1` | 1 × A100 |
-| Wall time | enough for the work; match it to the partition | baselines 4 h, victims 4 h, protection 12 h |
+| **Aryan** | baselines (zero-shot + clean fine-tunes, both models × 3 seeds, + 16-question protection smoke test) | ~1–2 h |
+| **Arjun** | protection (5 rounds) → victims (random + protected, both models × 3 seeds), chained | ~6–10 h, then ~2–3 h |
 
-We stay at the course defaults, so no mentor approval is needed. Don't add `-C a100_80` (80 GB only). It lengthens the queue, and 40 GB is enough for an 8B model with LoRA.
-
-Other rules that matter:
-- **Nothing heavy on the login node.** Jobs go through `sbatch`. Setup (env + downloads) is allowed there but can be killed; Part 4 has the fallback.
-- **Interactive web sessions idle for 4 h are cancelled.** We use batch jobs, so closing your laptop is fine.
-- **No `sleep` loops in jobs.**
+Each of you uses your **own ASURITE, own GitHub account, own Hugging Face account**. Two accounts = two GPU allowances.
 
 ---
 
-## Part 2. Connect to the ASU VPN (skip if you're on campus Wi-Fi)
+## 0. Before you start (5 min, both)
 
-1. Install **Cisco Secure Client (AnyConnect)**: search "ASU VPN" on asu.edu (ASU Service Center → VPN) and download the client for Windows.
-2. Open Cisco Secure Client and type **`sslvpn.asu.edu`** in the address box → **Connect**.
-3. Sign in with your **ASURITE** username and password, then approve the **Duo** push.
-4. Wait until the client shows **Connected**. Leave it connected the whole time you're using Sol.
-
----
-
-## Part 3. Open a terminal on Sol
-
-**Option A, browser (easiest):**
-1. Go to **https://ood05.sol.rc.asu.edu/pun/sys/dashboard/** (on VPN) and sign in with ASURITE + Duo.
-2. Top menu → **Clusters** → **Sol Shell Access**. A terminal opens in a new tab. This is the **login node**.
-
-**Option B, your own terminal:** `ssh <ASURITE>@login.sol.rc.asu.edu` (on VPN; same password + Duo).
-
-Check you're on a login node: `hostname` shows something like `sol-login0x`.
+- [ ] **Arjun:** GitHub → `a-korath/CSE472PROJ2` → Settings → Collaborators → **Add people** → `aryan285patyal`. **Aryan:** accept the email invite.
+- [ ] **Both:** Hugging Face account with **Llama-3 access approved** (huggingface.co/meta-llama/Meta-Llama-3-8B shows "You have been granted access"). Create a **Read** token: huggingface.co → Settings → Access Tokens → New token → Read. Keep it handy; you paste it once.
+- [ ] **Both:** GitHub **personal access token** for cloning on Sol: github.com → Settings → Developer settings → Fine-grained tokens → Generate → Repository access: `a-korath/CSE472PROJ2` → Contents: Read-only.
+- [ ] VS Code installed with these 4 extensions (PowerShell):
+  ```powershell
+  code --install-extension ms-vscode-remote.remote-ssh
+  code --install-extension ms-vscode-remote.remote-ssh-edit
+  code --install-extension ms-vscode.remote-explorer
+  code --install-extension ms-vscode.remote-server
+  code --list-extensions | findstr remote      # all 4 listed
+  ```
+  The course guide lists only the first 3; Remote - Tunnels (`ms-vscode.remote-server`) is also required.
 
 ---
 
-## Part 4. One-time setup (both of you, ~30–45 min, mostly downloads)
+## 1. VPN (skip on campus Wi-Fi)
 
-**Arjun first:** GitHub → `a-korath/CSE472PROJ2` → Settings → Collaborators → **Add people** → `aryan285patyal`. Aryan accepts the email invite before cloning.
+1. Install **Cisco Secure Client** from https://sslvpn.asu.edu (or ASU MyApps).
+2. Open it → server **`sslvpn.asu.edu/2fa`** → **Connect** → ASURITE + password → approve **Duo**.
+3. Test: open https://ood05.sol.rc.asu.edu/pun/sys/dashboard/ → the OnDemand dashboard loads.
+   (`ping sol.asu.edu` timing out is normal; ping is blocked. The dashboard is the real test.)
+4. Keep the VPN connected while starting and using the session.
+
+---
+
+## 2. Launch the setup session (browser, not VS Code)
+
+Dashboard → gold top bar → **Interactive Apps** → under **Tunnels** → **VSCode Tunnel** (*not* "VSCode Server").
+
+Fill the form exactly like this (course defaults; no mentor approval needed):
+
+| Field | Value | Why |
+|---|---|---|
+| Account | `class_cse47267488fall2026` | course allocation |
+| Partition | `htc` | course rule: work under ~4 h goes on htc (Sol may reroute to `public`; that's fine) |
+| QoS | `class` (default) | the class account's QoS |
+| CPU Core Allocation | `8` | course default |
+| Memory Allocation (GiB) | `64` | course default |
+| GPU Resources | `gpu:a100:1` | full A100; needed so mamba installs the CUDA build of PyTorch and we can test it |
+| Wall time | `0-3` (= 3 hours, days-hours) | env install + ~35 GB of downloads take 45–90 min; don't start installs with little time left |
+| Additional sbatch options | *(blank)* | |
+| VSCode Instance | `Primary` | |
+| ☑ Email when the session starts | ticked | queue can take a while |
+
+Click **Launch**.
+
+## 3. Connect VS Code to it
+
+1. Browser → **My Interactive Sessions** (https://ood05.sol.rc.asu.edu/pun/sys/dashboard/batch_connect/sessions). Wait for the card to say **Running** with Host `sgXXX.sol.rc.asu.edu`. No code shown yet? Wait ~30 s and refresh.
+2. Click **Copy Code and Login via GitHub** → sign in to **your** GitHub → paste the code → Continue → **Authorize Visual Studio Code**. Never share this code.
+3. Desktop VS Code → **Remote Explorer** → dropdown **Remotes (Tunnels/SSH)** → sign in with **GitHub** (same account) → Refresh → **Tunnels** → `sol_<ASURITE>` (running) → click →.
+4. Open the terminal: **Ctrl + `**. The prompt looks like `[<ASURITE>@sgXXX ~]$`.
+
+Sanity check (paste):
+```bash
+hostname          # sgXXX  (a compute node; NOT login*)
+nvidia-smi        # NVIDIA A100 (80 GB or 40 GB)
+```
+If the dashboard shows a red **"Slurm Errors"** banner, that's a Research Computing outage. Wait and retry; don't change settings.
+
+---
+
+## 4. One-time setup inside the tunnel terminal (both, ~45–90 min)
 
 ```bash
-# 4.1 Get the code into scratch (big, fast, not your home quota)
+# 4.1 Hugging Face cache on scratch (weights ~35 GB; scratch, not home).
+#     If an earlier test put HF_HOME=.../hf_cache in ~/.bashrc, this replaces it so everything uses one path.
+sed -i '/HF_HOME/d' ~/.bashrc
+echo 'export HF_HOME=/scratch/$USER/hf' >> ~/.bashrc
+source ~/.bashrc && echo $HF_HOME          # /scratch/<ASURITE>/hf
+
+# 4.2 Code on scratch
 cd /scratch/$USER
 git clone https://github.com/a-korath/CSE472PROJ2.git
-#   username = your GitHub username, password = a GitHub personal access token
-#   (github.com → Settings → Developer settings → Personal access tokens → fine-grained,
-#    read access to this repo). Already cloned? cd into it and `git pull`.
+#   Username: your GitHub username.  Password: the fine-grained token from step 0.
+#   Already cloned?  cd CSE472PROJ2 && git pull
 cd CSE472PROJ2/ue-arc
-git log -1 --oneline        # must show 09a55a1 "Sol fixes..." or newer
+git log -1 --oneline                       # must be the "Sol: QoS class, mamba env..." commit or newer
 
-# 4.2 Point the Hugging Face cache at scratch. Do this BEFORE logging in (the token is stored here)
-export HF_HOME=/scratch/$USER/hf
-echo 'export HF_HOME=/scratch/$USER/hf' >> ~/.bashrc     # so future shells have it too
+# 4.3 Create the environment (mamba, from environment.yml; stored in /scratch/$USER/envs/ue).
+#     First run stops after creating the env and asks you to log in to Hugging Face. That's expected.
+bash setup_sol.sh
 
-# 4.3 Python environment
-module avail mamba              # confirm a mamba module exists (the scripts assume mamba/latest)
-module load mamba/latest
-mamba create -n ue python=3.11 -y
+# 4.4 Hugging Face login (paste the Read token; answer "n" to "add as git credential")
 source activate ue
-pip install -r requirements.txt
+huggingface-cli login
 
-# 4.4 Hugging Face login (your account must already have Llama-3 access approved)
-huggingface-cli login           # paste a READ token from huggingface.co → Settings → Access Tokens
-
-# 4.5 Download every model + WordNet (Llama-3-8B, Qwen3-8B, gpt2, all-MiniLM-L6-v2)
-bash setup_sol.sh               # ends with "setup OK"; safe to re-run if interrupted
+# 4.5 Run setup again: checks the GPU and downloads Llama-3-8B, Qwen3-8B, gpt2, all-MiniLM-L6-v2, WordNet
+bash setup_sol.sh
+#   expect early:  torch 2.x  cuda: True  NVIDIA A100...
+#   expect last:   setup OK
 ```
-
-**If 4.5 gets killed on the login node**, run it as a small CPU job instead (it has no GPU, so it doesn't use GPU time):
-```bash
-mkdir -p logs
-sbatch -A class_cse47267488fall2026 -p htc -c 4 --mem=16G -t 0-02:00 -o logs/setup-%j.out setup_sol.sh
-squeue -u $USER                 # wait until it disappears, then:
-tail logs/setup-*.out           # must end with "setup OK"
-```
-If that job fails with a network error, compute nodes have no internet. Go back to the login node and re-run `bash setup_sol.sh`; it resumes downloads.
+If the session runs out of time mid-download, start a new session (step 2) and re-run `bash setup_sol.sh`; it resumes. If it ran out mid-**env install**, the env may be broken: `rm -rf /scratch/$USER/envs/ue` and run 4.3 again with plenty of wall time.
 
 ---
 
-## Part 5A. Aryan: submit baselines
+## 5. Submit the training jobs (from the same tunnel terminal)
 
+The job scripts already carry the right request in their `#SBATCH` headers:
+
+| Script | Account | Partition / QoS | CPU / Mem / GPU | Wall time |
+|---|---|---|---|---|
+| `sol_baselines.sh` | class_cse47267488fall2026 | **htc** (passed at submit) / class | 8 / 64G / 1×A100 | 4 h |
+| `sol_protect.sh` | class_cse47267488fall2026 | general / class | 8 / 64G / 1×A100 | 12 h (longer than htc allows, so general per the course rule) |
+| `sol_victims.sh` | class_cse47267488fall2026 | **htc** (passed at submit) / class | 8 / 64G / 1×A100 | 4 h (passed at submit) |
+
+### 5A. Aryan
 ```bash
 cd /scratch/$USER/CSE472PROJ2/ue-arc
-module load mamba/latest && source activate ue
-mkdir -p logs                                   # must exist at submit time or SLURM drops the log
-
-# Dry check: validates account/partition/GPU request without queuing
-sbatch --test-only -p htc sol_baselines.sh
-# Real submit (htc: course rule for jobs under ~4 h)
-sbatch -p htc sol_baselines.sh
+mkdir -p logs                                   # SLURM drops the log if this folder is missing at submit time
+sbatch --test-only -p htc sol_baselines.sh      # validates the request; no job is queued
+sbatch -p htc sol_baselines.sh                  # prints "Submitted batch job <ID>"
+squeue -u $USER                                 # PD = waiting, R = running
 ```
-Expected: about 1–2 h of run time once it starts.
 
-## Part 5B. Arjun: submit protection, then victims (chained)
-
+### 5B. Arjun
 ```bash
 cd /scratch/$USER/CSE472PROJ2/ue-arc
-module load mamba/latest && source activate ue
 mkdir -p logs
-
-sbatch --test-only sol_protect.sh               # partition general, 12 h (longer than htc allows)
+sbatch --test-only sol_protect.sh
 PJ=$(sbatch --parsable sol_protect.sh); echo "protect job = $PJ"
-
-# Victims start automatically only if protection finishes successfully
-sbatch -p htc -t 0-04:00 --dependency=afterok:$PJ sol_victims.sh   # -t: htc caps jobs at ~4 h
+sbatch -p htc -t 0-04:00 --dependency=afterok:$PJ sol_victims.sh   # starts only if protection succeeds
+squeue -u $USER                                 # victims show PD (Dependency) until protection ends
 ```
-Expected: protection ~6–10 h, then victims ~2–3 h.
 
-**If `--test-only` complains about the QoS**, add `-q class` to that command and to the real submit (e.g. `sbatch -q class -p htc sol_baselines.sh`). If it complains about the partition for protection, try `-p public`.
+If `--test-only` rejects anything: htc time limit → keep `-t 0-04:00`; partition `general` refused → add `-p public`.
+If `sbatch: command not found` in the tunnel, submit from Dashboard → **Clusters → Sol Shell Access** instead (submitting from a login node is allowed; installing is not).
 
 ---
 
-## Part 6. Watching your jobs
+## 6. End the setup session (releases the GPU)
 
-| Command | What it shows |
+The batch jobs are independent; they keep running without the tunnel.
+1. VS Code: bottom-left → **Close Remote Connection**.
+2. Browser → **My Interactive Sessions** → the VSCode Tunnel card → red **Delete** → confirm the card is gone.
+
+Portal sessions also auto-cancel after 4 h idle, but end it yourself so the GPU goes back to the class.
+
+---
+
+## 7. Checking on jobs later (no GPU needed)
+
+Use Dashboard → **Clusters → Sol Shell Access** (a login node; fine for monitoring), then `cd /scratch/$USER/CSE472PROJ2/ue-arc`.
+
+| Command | Shows |
 |---|---|
-| `squeue -u $USER` | Your jobs. `PD` = waiting in queue (REASON says why), `R` = running |
-| `tail -f logs/arc-baselines-<jobid>.out` | Live log (Ctrl+C stops watching, not the job) |
-| `sacct -j <jobid> --format=JobID,State,Elapsed,MaxRSS` | After it ends: `COMPLETED`, `FAILED`, `TIMEOUT`, `CANCELLED` |
-| `scancel <jobid>` | Cancel a job |
+| `squeue -u $USER` | your jobs: `PD` waiting (REASON says why), `R` running |
+| `tail -f logs/arc-baselines-<ID>.out` | live log (Ctrl+C stops watching, not the job) |
+| `sacct -j <ID> --format=JobID,State,Elapsed,MaxRSS` | after it ends: COMPLETED / FAILED / TIMEOUT / CANCELLED |
+| `scancel <ID>` | cancel a job |
 
-You can close the terminal and your laptop; batch jobs keep running.
+You'll also get Slurm emails when jobs start and end (`--mail-type=ALL` isn't set; add `#SBATCH --mail-type=END,FAIL` if you want them).
 
 ---
 
-## Part 7. When something goes wrong
+## 8. When something goes wrong
 
-| Symptom | Fix |
+| Symptom in the log | Fix |
 |---|---|
-| Log ends in `unbound variable` | Pull the latest code (`git pull`); the fix is in 09a55a1 |
-| `OSError ... offline mode` / model not found | That model didn't download. Re-run `bash setup_sol.sh` on the login node |
-| `401` / gated repo error for Llama | HF token missing or no Llama access. Redo 4.2 + 4.4 in the same shell, or use `LLAMA=NousResearch/Meta-Llama-3-8B sbatch ...` (same weights, ungated; say so in the report) |
-| `CUDA out of memory` | You got a 40 GB card and it wasn't enough. Resubmit with `-C a100_80` (and tell your mentor you did) |
-| Protection `TIMEOUT` | Its victims job is cancelled automatically. Re-run the two Part 5B submit lines; protection resumes from the last saved round |
-| Baselines `TIMEOUT` on htc | Resubmit the same line; finished runs are skipped |
+| `unbound variable` | `git pull` (fixed in the repo) and resubmit |
+| `OSError ... offline mode` / model not found | That model isn't in `$HF_HOME`. New tunnel session → `bash setup_sol.sh` |
+| `401` / gated repo for Llama | token or Llama access missing. Redo 4.4; or prefix the submit with `LLAMA=NousResearch/Meta-Llama-3-8B` (same weights, ungated; disclose in the report) |
+| `CUDA out of memory` | you got a 40 GB slice. Resubmit with `-C a100_80` added and tell the mentor |
+| protection `TIMEOUT` | the chained victims job cancels itself. Re-run the two 5B submit lines; protection resumes from its last saved round |
+| baselines/victims `TIMEOUT` on htc | resubmit the same line; finished runs are skipped |
+| `ModuleNotFoundError` | env incomplete. New tunnel session → `bash setup_sol.sh` |
 
 ---
 
-## Part 8. Friday morning checks
+## 9. Friday morning checks
 
-**Aryan:**
+**Aryan** (Sol Shell):
 ```bash
-ls results/                                   # 2 *_zeroshot.json + 6 *_clean_s*.json
-grep -h '"accuracy"' results/*zeroshot*.json results/*clean*.json
-tail -20 logs/arc-baselines-*.out             # smoke test: protected loss < clean loss?
+cd /scratch/$USER/CSE472PROJ2/ue-arc
+ls results/                                    # 2 *_zeroshot.json + 6 *_clean_s*.json
+grep -H '"accuracy"' results/*zeroshot*.json results/*clean*.json
+grep -iE "loss|final" logs/arc-baselines-*.out | tail     # smoke test: protected loss < clean loss
 ```
-If Qwen3-8B's clean accuracy isn't at least ~3 points above its zero-shot, email the mentor about switching to `Qwen/Qwen3-8B-Base`.
+If Qwen3-8B's clean accuracy isn't ~3+ points above its zero-shot, email the mentor about `Qwen/Qwen3-8B-Base`.
 
 **Arjun:**
 ```bash
-cat protected/rounds.jsonl                    # every round: protected_loss well below clean_loss
-ls protected/                                 # r0.jsonl, r1.jsonl, ... appear as rounds finish
-squeue -u $USER                               # victims waiting (Dependency) or running
+cd /scratch/$USER/CSE472PROJ2/ue-arc
+cat protected/rounds.jsonl      # every round: protected_loss well below clean_loss
+ls protected/                   # r0.jsonl, r1.jsonl, ... as rounds finish
+squeue -u $USER                 # victims: PD (Dependency) or R
 ```
+
+---
+
+## Course rules this follows
+VPN off campus · VSCode **Tunnel** (not Server) · account `class_cse47267488fall2026` · htc for < 4 h, general for longer ·
+8 cores / 64 GiB / `gpu:a100:1` · envs via **mamba**, created **inside a compute session**, recorded in `environment.yml` ·
+scratch for large files (not backed up; unused files deleted after 90 days, fine for model weights) · cancel sessions you're done with.

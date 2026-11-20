@@ -1,0 +1,14 @@
+# Sol env for this project. Course rule: create it INSIDE a compute session (VS Code Tunnel / batch job), with mamba.
+# The GPU node lets mamba pick the CUDA build of PyTorch (pytorch-gpu).
+name: ue
+channels: [conda-forge]
+dependencies:
+  - python=3.11
+  - pytorch-gpu>=2.3
+  - transformers>=4.51
+  - peft>=0.11
+  - accelerate>=0.30
+  - datasets>=2.19
+  - sentence-transformers>=3.0
+  - nltk>=3.8
+  - huggingface_hub

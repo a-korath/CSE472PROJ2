@@ -5,7 +5,7 @@
 #SBATCH -J arc-protect
 #SBATCH -A class_cse47267488fall2026   # CSE 472 course allocation
 #SBATCH -p general
-#SBATCH -q public
+#SBATCH -q class                       # class account default QoS (verified in the OnDemand form)
 #SBATCH -G a100:1
 #SBATCH -c 8
 #SBATCH --mem=64G
@@ -14,7 +14,7 @@
 set -eo pipefail   # -u is turned on after env activation: conda/mamba activate scripts read unset vars
 
 # Sol: module env + scratch cache. Anywhere else (RunPod, Colab): `HF_HOME=... bash -e` in an env with requirements.txt
-if command -v module >/dev/null; then module load mamba/latest; source activate ue; fi   # check: module avail mamba
+if command -v module >/dev/null; then module load mamba/latest; source activate ue || source activate /scratch/$USER/envs/ue; fi   # check: module avail mamba
 set -u
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false   # compute nodes: read the pre-downloaded cache only
 export HF_HOME=${HF_HOME:-/scratch/$USER/hf}   # weights pre-downloaded here from the login node
