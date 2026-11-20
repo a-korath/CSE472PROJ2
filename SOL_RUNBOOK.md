@@ -119,7 +119,7 @@ sbatch --test-only sol_protect.sh               # partition general, 12 h (longe
 PJ=$(sbatch --parsable sol_protect.sh); echo "protect job = $PJ"
 
 # Victims start automatically only if protection finishes successfully
-sbatch -p htc --dependency=afterok:$PJ sol_victims.sh
+sbatch -p htc -t 0-04:00 --dependency=afterok:$PJ sol_victims.sh   # -t: htc caps jobs at ~4 h
 ```
 Expected: protection ~6–10 h, then victims ~2–3 h.
 
