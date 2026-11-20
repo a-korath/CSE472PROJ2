@@ -18,7 +18,7 @@ export PATH=/scratch/$USER/envs/ue/bin:$PATH
 set -u
 python -c 'import torch, transformers, peft' || { echo "ERROR: env missing; run setup_sol.sh"; exit 1; }
 export HF_HUB_OFFLINE=1 TOKENIZERS_PARALLELISM=false HF_HOME=${HF_HOME:-/scratch/$USER/hf}
-cd "${SLURM_SUBMIT_DIR:-.}"
+[ -f "${SLURM_SUBMIT_DIR:-}/sol_extra.sh" ] && cd "$SLURM_SUBMIT_DIR"   # sbatch: submit dir; interactive/tunnel: stay in cwd
 mkdir -p results adapters logs
 [ -f data/hint.jsonl ] || python make_hint.py
 MODELS=${MODELS:-Qwen/Qwen3-8B-Base}
