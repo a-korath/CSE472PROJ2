@@ -1,0 +1,16 @@
+{"round": 0, "phase": "search", "clean_loss": 0.6065728833997579, "protected_loss": 0.25097479313196414, "edits_per_ex": 1.257372654155496}
+{"round": 1, "phase": "train", "train_loss_last20": 0.08723206255817786}
+{"round": 1, "phase": "eval", "surrogate_train_acc": 0.9919571045576407}
+{"round": 1, "phase": "search", "clean_loss": 0.3728689063808652, "protected_loss": 0.03765110472167529, "edits_per_ex": 1.2537980339588919}
+{"round": 2, "phase": "train", "train_loss_last20": 0.0002422370966996823}
+{"round": 2, "phase": "eval", "surrogate_train_acc": 0.9973190348525469}
+{"round": 2, "phase": "search", "clean_loss": 0.5372033186651481, "protected_loss": 0.03764403224282192, "edits_per_ex": 1.1769436997319034}
+{"round": 3, "phase": "train", "train_loss_last20": 8.623658841315774e-05}
+{"round": 3, "phase": "eval", "surrogate_train_acc": 0.998212689901698}
+{"round": 3, "phase": "search", "clean_loss": 0.39027314850588296, "protected_loss": 0.0016676380514344241, "edits_per_ex": 1.1778373547810546}
+{"round": 4, "phase": "train", "train_loss_last20": 0.013312698398431166}
+{"round": 4, "phase": "eval", "surrogate_train_acc": 0.9991063449508489}
+{"round": 4, "phase": "search", "clean_loss": 0.3736680533453233, "protected_loss": 0.0167747422755545, "edits_per_ex": 1.1054512957998213}
+{"round": 5, "phase": "train", "train_loss_last20": 0.043078598239117125}
+{"round": 5, "phase": "eval", "surrogate_train_acc": 0.9991063449508489}
+{"round": 5, "phase": "search", "clean_loss": 0.21292926432091255, "protected_loss": 0.006771930011283458, "edits_per_ex": 1.1823056300268096}

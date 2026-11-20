@@ -1,0 +1,24 @@
+{
+  "model": "meta-llama/Meta-Llama-3-8B",
+  "train": "data/random_k2.jsonl",
+  "seed": 1,
+  "n": 1172,
+  "accuracy": 0.7960750853242321,
+  "lora": {
+    "r": 16,
+    "lora_alpha": 32,
+    "lora_dropout": 0.05,
+    "target_modules": [
+      "q_proj",
+      "k_proj",
+      "v_proj",
+      "o_proj",
+      "gate_proj",
+      "up_proj",
+      "down_proj"
+    ]
+  },
+  "epochs": 3,
+  "lr": 0.0001,
+  "bs": 8
+}
