@@ -10,7 +10,7 @@ for r in csv.DictReader(open(R + "results/all_results.csv")):
     acc[(r["model"], r["train_set"])].append(100 * float(r["test_accuracy"]))
 met = {json.loads(l)["file"]: json.loads(l) for l in open(R + "results/metrics_protected.jsonl")}
 met["data/hint.jsonl"] = json.load(open(R + "results/metrics_hint.json"))
-met["random"] = {"sbert": 0.970, "ppl_ratio": 1.13, "ppl": 106.5}   # from PROGRESS.md (random_k2 metrics run on Arjun's laptop)
+met["random"] = json.loads(open(R + "logs/local_random.log").read().strip().splitlines()[-1])  # random_k2 metrics, Arjun's laptop run
 PPL = {"clean": met["data/hint.jsonl"]["ppl_orig"], "random": met["random"]["ppl"], "protected_r0": met["protected/r0.jsonl"]["ppl"], "protected": met["protected/final.jsonl"]["ppl"], "hint": met["data/hint.jsonl"]["ppl"]}
 SB = {"clean": (1.0, 1.0), "random": (met["random"]["sbert"], met["random"]["ppl_ratio"]),
       "protected_r0": (met["protected/r0.jsonl"]["sbert"], met["protected/r0.jsonl"]["ppl_ratio"]),

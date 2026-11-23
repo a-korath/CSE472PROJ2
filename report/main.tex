@@ -32,10 +32,10 @@ We extend it with an answer-letter loss, a Llama-3-8B + LoRA surrogate and HotFl
 meaning and fluency constraints, and evaluate on ARC-Challenge with Llama-3-8B (white-box) and Qwen3-8B (black-box)
 victims. \textbf{Answer: no.} Protected data lets Llama-3-8B keep the same share of its fine-tuning gain as random edits
 with the same budget (80.03\% vs.\ 80.18\% test accuracy; clean 82.62\%, zero-shot 77.47\%), and swaps from the first
-round of the optimization do no better (79.81\%). The surrogate memorizes the 1{,}119 training questions within one round, and the resulting swaps are
-example-specific rather than a shared shortcut. In a pre-registered bonus experiment, a single \texttt{!} appended to
-the correct choice, with no optimization at all, removes the entire fine-tuning gain on all three victims and drives
-Llama-3-8B to 51.45\%, far below zero-shot.
+round of the optimization do no better (79.81\%). The surrogate memorizes the edited training text within one round,
+and the resulting swaps are example-specific rather than a shared shortcut. In a pre-registered bonus experiment, a
+single \texttt{!} appended to the correct choice, with no optimization at all, removes the entire fine-tuning gain on
+all three victims in every seed and drives Llama-3-8B to 51.45\%, far below zero-shot.
 \end{abstract}
 
 \section{Introduction}
@@ -51,7 +51,7 @@ QA models \citep{li2023maketext}. Whether it survives the setting that matters m
 fine-tuning of billion-parameter pretrained LLMs, is open. \textbf{Research question:} does an LLM adaptation of the
 min--min unlearnable-example method keep an attacker who fine-tunes Llama-3-8B or Qwen3-8B on protected ARC-Challenge
 questions from gaining accuracy? \textbf{One-sentence answer:} no; it is no better than random word edits, because an 8B
-surrogate memorizes the training set instead of forming a shortcut, whereas a single consistent marker on the correct
+surrogate memorizes its edited training text instead of forming a shortcut, whereas a single consistent marker on the correct
 answer does make the data unlearnable for every model we tested.
 
 \textbf{Contributions.} (1) A concrete LLM adaptation of min--min unlearnable text (answer-letter loss, LoRA surrogate,
@@ -71,16 +71,19 @@ and VTG \citep{li2025vtg} trains a single generator for transfer across datasets
 by a first-order (HotFlip-style; \citealp{ebrahimi2018hotflip}) estimate of the loss change, constrained to embedding
 neighbours with cosine similarity $\ge 0.5$ \citep{alzantot2018generating}, one substitution per example, with LSTM and
 BiDAF surrogates. Their key observation is that effective substitutions collapse into \emph{simple patterns}: words that
-correlate with the label (zero Jaccard overlap between classes; five words cover most examples) or a marker next to the
-answer span. Hand-made ``label hints'' and ``answer hints'' then protect BERT and RoBERTa fine-tuning without any
+correlate with the label (in their most effective, round-0 sets, zero Jaccard overlap between classes, and five words
+cover 60--100\% of a class's substitutions) or a marker next to the answer span. Hand-made ``label hints'' and ``answer hints'' then protect BERT and RoBERTa fine-tuning without any
 optimization. Our bonus is that idea, transplanted to LLM fine-tuning. Mechanistically, all of these exploit
 \emph{shortcut learning} \citep{geirhos2020shortcut}.
 
 \textbf{LLMs and pretraining.} TextCloak \citep{zhao2026textcloak} targets LLM fine-tuning directly, training a
 reinforcement-learning policy that rewrites text and scoring rewrites with fine-tuned surrogate LLMs; it changes far more
-than two words. \citet{li2026priors} show that pretrained models can learn genuine features despite unlearnable
-shortcuts, which defeats protection designed for models trained from scratch. Our negative result is consistent with
-that finding in the LLM fine-tuning setting.
+than two words. Its authors argue that a low surrogate training loss need not degrade a fine-tuned LLM, because of the
+LLM's pretraining priors, and so reward downstream degradation directly. Their experiments include Li et al.'s
+min--min word substitutions as a baseline: on ARC-Challenge, across four LLMs it was not optimized against, it changes
+test accuracy by at most 2.6 points. \citet{li2026priors} show, in image classification, that pretrained models can
+learn genuine features despite unlearnable shortcuts, which defeats protection designed for models trained from scratch.
+Our negative result agrees with both findings, here with our own LLM surrogate and a white-box victim.
 
 \section{Model Description (Design Checkpoint)}\label{sec:method}
 \textbf{Threat model.} The defender owns a set of question--answer pairs and may edit the question and choice text
@@ -113,11 +116,13 @@ model; matching the attacker's training recipe makes the white-box case truly wh
 only difference in the black-box case.
 
 \textbf{Perturbation: HotFlip-guided whole-word swaps.} Candidate replacements for each word are its 50 nearest
-neighbours in Llama-3-8B's input-embedding space (cosine), restricted to single-token whole words (4{,}350 editable words
-in the training set). For a word at position $p$ with embedding $\mathbf e_{\text{old}}$, the loss change from swapping
-in $\mathbf e_{\text{new}}$ is estimated as $(\mathbf e_{\text{new}}-\mathbf e_{\text{old}})^\top\nabla_{\mathbf e_p}
-\ell_{\text{ans}}$. Li et al.'s Eq.~5 scores $\mathbf e_s^\top\nabla\ell$ only; within one position the two rankings are
-identical, but only the difference is a valid first-order estimate across positions, so we use it. One backward pass
+neighbours in Llama-3-8B's input-embedding space (cosine), restricted to single-token whole words (4{,}350 distinct editable words,
+covering about 95\% of the word occurrences in the training questions). The lists were computed from the input
+embeddings of the \texttt{NousResearch/Meta-Llama-3-8B} mirror, a re-upload of the same weights. For a word at position
+$p$ with embedding $\mathbf e_{\text{old}}$, the loss change from swapping in $\mathbf e_{\text{new}}$ is estimated as
+$(\mathbf e_{\text{new}}-\mathbf e_{\text{old}})^\top\nabla_{\mathbf e_p}\ell_{\text{ans}}$. Li et al.'s Eq.~5 scores
+$\mathbf e_s^\top\nabla\ell$ only; within one position the two rankings are identical, but only the difference is a
+valid first-order estimate across positions, so we use it, as does \citet[Eq.~4]{zhao2026textcloak}. One backward pass
 scores every (position, neighbour) pair; we keep the 20 most negative, drop those failing the filters, re-score the
 survivors exactly, and accept the best only if it really lowers the loss. This is done greedily up to $k=2$ swaps, with
 the gradient recomputed after each. \emph{Why:} whole-word, one-token swaps are the only edits for which the HotFlip
@@ -151,14 +156,15 @@ evaluate on the clean test split.
 \citep{yang2025qwen3} is the black-box victim. Because Qwen3-8B turned out to gain little from fine-tuning, we added
 Qwen3-8B-Base as a second black-box victim (Section~\ref{sec:analysis}).
 
-\textbf{Fine-tuning (identical for every run, including the surrogate).} LoRA via \texttt{peft}
+\textbf{Fine-tuning (identical for every victim run).} LoRA via \texttt{peft}
 \citep{mangrulkar2022peft}: $r=16$, $\alpha=32$, dropout 0.05, targets q/k/v/o/gate/up/down projections; AdamW, learning
 rate $10^{-4}$, no weight decay, 5\% linear warm-up then linear decay, gradient clipping 1.0, batch size 8, 3 epochs,
-max length 512, bf16, gradient checkpointing; answer-letter loss as in Section~\ref{sec:method}.
+max length 512, bf16, gradient checkpointing; answer-letter loss as in Section~\ref{sec:method}. The surrogate uses the
+same settings except that it trains 2 epochs per min--min round.
 
 \textbf{Evaluation.} Accuracy on the clean test set, predicting the letter with the highest next-token logit among the
 letters that question actually has (no free generation). Seeds 1--3 for every fine-tune; we report mean $\pm$ sample
-standard deviation. Readability: mean GPT-2 perplexity of question+choices (absolute, and the mean per-question ratio to
+standard deviation, and compare conditions with Welch's $t$-test over seeds \citep{virtanen2020scipy}. Readability: mean GPT-2 perplexity of question+choices (absolute, and the mean per-question ratio to
 the original). Meaning: mean SBERT (\texttt{all-MiniLM-L6-v2}; \citealp{wang2020minilm}) cosine similarity to the
 original text.
 
@@ -199,8 +205,11 @@ the headroom any protection must remove. Qwen3-8B gains only +1.82 (91.04$\right
 (92.41$\rightarrow$92.63).
 
 \textbf{White-box (Llama-3-8B).} The final protected set gives 80.03 $\pm$ 0.92, within seed noise of random edits
-(80.18 $\pm$ 0.50) and of the round-0 set (79.81 $\pm$ 1.30): the differences are smaller than one standard deviation. All three edited sets remove about half the
-fine-tuning gain, but optimization adds nothing beyond the damage any two word swaps do.
+(80.18 $\pm$ 0.50) and of the round-0 set (79.81 $\pm$ 1.30): the differences are smaller than one standard deviation
+(protected vs.\ random $p=0.82$, round 0 vs.\ random $p=0.68$), while every edited set is clearly below clean
+fine-tuning (protected vs.\ clean $p=0.02$, random vs.\ clean $p=0.005$). With three seeds the test has little power,
+so this shows no detectable difference, not proof of none. All three edited sets remove about half the fine-tuning
+gain, but optimization adds nothing detectable beyond the damage any two word swaps do.
 
 \textbf{Black-box (Qwen3-8B, Qwen3-8B-Base).} Protected and random sets stay within one point of each other and of
 clean fine-tuning (Qwen3-8B: 92.29 vs.\ 92.04 vs.\ 92.86). With under two points of headroom these victims cannot
@@ -212,7 +221,9 @@ search only accepts a swap that lowers the loss, and 21\% of questions got none.
 
 \textbf{Surrogate.} Figure~\ref{fig:rounds} shows the surrogate's answer loss on clean and protected training questions.
 The protected loss falls to 0.0068 by round 5 (clean: 0.213), so the optimization succeeds on its own objective, while
-the surrogate's accuracy on the protected set is 99.2\% after the first round and $\ge$99.7\% afterwards.
+the surrogate's accuracy on the protected set is 99.2\% after the first round and $\ge$99.7\% afterwards. Its loss on the
+unedited versions of the same questions stays at 0.21--0.54 in rounds 1--5, so what it fits is the edited text, not the
+questions themselves.
 
 \begin{figure}[t]
 \centering
@@ -222,8 +233,8 @@ the surrogate's accuracy on the protected set is 99.2\% after the first round an
 \begin{minipage}[t]{0.5\linewidth}\vspace{0pt}
 \caption{Surrogate (Llama-3-8B + LoRA) answer loss on the training questions after each min--min round, on the clean
 text and on that round's protected text. Labels: the surrogate's training accuracy on the previous round's protected
-set. The swaps make questions easy for the surrogate, but it already fits them almost perfectly after one round of
-training.}
+set. The swaps make questions easy for the surrogate, but it already fits the edited text almost perfectly after one
+round of training.}
 \label{fig:rounds}
 \end{minipage}
 \end{figure}
@@ -255,14 +266,16 @@ palms\textcolor{red!70!black}{!} [A] \;B.\ wet palms \;C.\ palms covered with oi
 
 \subsection{Analysis and Limitations}\label{sec:analysis}
 \textbf{What did not transfer, and why.} Li et al.\ found that effective substitutions are \emph{class-wise}: grouped by
-label, the substituted words of different classes share nothing, and the five most frequent words cover most examples.
-We ran the same analysis on our protected sets, grouping substituted words by answer letter. The overlap between
-letters is a Jaccard index of 0.07--0.08 in every round (random edits: 0.14), and the top five words cover only 4--12\% of a
-letter's edits (Li et al.: over 90\%). The swaps are \emph{sample-wise}. The surrogate fits the training set within one
-round (Figure~\ref{fig:rounds}), so each later search lowers the loss of a model that has memorized each question,
-exploiting that model's idiosyncrasies rather than creating a pattern that a fresh victim would find easier than the
-science itself. A fresh victim starts from strong pretrained priors, which \citet{li2026priors} show let pretrained
-models learn the genuine features despite shortcut perturbations. The optimizer does drift toward the answer: 23\% of
+label, the substituted words of different classes share nothing in their most effective (round-0) sets, and the five
+most frequent words cover 60--100\% of a class's substitutions. We ran the same analysis on our protected sets, grouping
+substituted words by answer letter. The overlap between letters is a Jaccard index of 0.07--0.08 in every round (random
+edits: 0.14). Jaccard alone is not decisive (Li et al.'s AG-News Error-min-1 set also scores 0.08), but the top-five
+share is: the top five words cover only 4--12\% of a letter's edits (Li et al.: 60--100\%). The swaps are
+\emph{sample-wise}. The surrogate fits the edited training text within one round (Figure~\ref{fig:rounds}), so each
+later search lowers the loss of a model that has memorized each edited question, exploiting that model's idiosyncrasies
+rather than creating a pattern that a fresh victim would find easier than the science itself. A fresh victim starts from
+strong pretrained priors, which let pretrained models learn the genuine features despite shortcut perturbations
+\citep{li2026priors}; \citet{zhao2026textcloak} make the same argument for LLMs. The optimizer does drift toward the answer: 23\% of
 final-round edits land on the correct choice versus 13\% for random edits (16\% at round 0), but with two swaps drawn from
 embedding neighbours of the original words this never becomes a consistent hint. Running more rounds did not help (round 0 and round 5
 protect equally).
@@ -283,16 +296,16 @@ is trivially removable by an attacker who strips trailing punctuation.
 \subsection{Bonus: A One-Character Answer Hint}\label{sec:bonus}
 \textbf{Idea and hypothesis (pre-registered).} Li et al.'s strongest text protection was not optimized at all: it was a
 consistent marker. Our analysis suggests the min--min search is missing exactly such a pattern. We append \texttt{!} to
-the \emph{correct} choice of every training question; no choice in ARC's train, validation or test splits (about
-10{,}000 choices) ends with \texttt{!}, while 39\% end with a period. Before running any victim, we committed this
+the \emph{correct} choice of every training question; none of the 10{,}357 choices in ARC's train, validation and test
+splits ends with \texttt{!}, while about 40\% end with a period. Before running any victim, we committed this
 hypothesis to the repository: \emph{``A model-agnostic answer hint protects at least as well as our min--min word swaps on
 Llama-3-8B, and transfers better to Qwen3-8B, because it does not depend on the surrogate's gradients''}, with success
 defined as (a) hint accuracy $\le$ protected accuracy on Qwen3-8B, and (b) hint accuracy within 2 points of zero-shot on
 both models.
 
-\textbf{Outcome.} One edit per question, SBERT 0.995 and PPL ratio 1.16 (within our 1.2 limit). Hint accuracy:
-Llama-3-8B 51.45 $\pm$ 11.88, Qwen3-8B 89.90 $\pm$ 1.03, Qwen3-8B-Base 80.75 $\pm$ 9.20, below zero-shot on all three
-victims. (a) \textbf{Confirmed}: 89.90 vs.\ 92.29 on Qwen3-8B. (b) \textbf{Confirmed on Qwen3-8B} ($-1.14$ points) and
+\textbf{Outcome.} One edit per question, SBERT 0.995 and a mean PPL ratio of 1.16 (the per-question filters were not
+applied to the hint set). Hint accuracy: Llama-3-8B 51.45 $\pm$ 11.88, Qwen3-8B 89.90 $\pm$ 1.03, Qwen3-8B-Base 80.75
+$\pm$ 9.20, below zero-shot on all three victims in every seed. (a) \textbf{Confirmed}: 89.90 vs.\ 92.29 on Qwen3-8B. (b) \textbf{Confirmed on Qwen3-8B} ($-1.14$ points) and
 \textbf{rejected on Llama-3-8B by overshoot}: the hint does not merely remove the +5.15 gain, it pushes accuracy 26 points
 below zero-shot. The victims learn ``pick the option ending in \texttt{!}'', and on clean test questions without the
 marker their predictions become erratic, as the large seed variance shows (Llama 42.5--64.9\%, Qwen3-8B-Base
@@ -314,7 +327,8 @@ motivating threat, partial protection (only some users protect), and the hand-la
 We thank our mentor Chengshuai Zhao for guidance. Experiments used ASU Research Computing's Sol supercomputer
 \citep{jennewein2023sol}. Software: PyTorch \citep{paszke2019pytorch}, Hugging Face Transformers
 \citep{wolf2020transformers}, PEFT \citep{mangrulkar2022peft}, Datasets \citep{lhoest2021datasets},
-Sentence-Transformers \citep{reimers2019sbert}, NLTK/WordNet \citep{bird2009nltk,miller1995wordnet}.
+Accelerate \citep{gugger2022accelerate}, Sentence-Transformers \citep{reimers2019sbert}, NLTK/WordNet
+\citep{bird2009nltk,miller1995wordnet}, SciPy \citep{virtanen2020scipy} and Matplotlib \citep{hunter2007matplotlib}.
 \textbf{Use of generative AI:} we used Anthropic's Claude (Claude Opus models, via the Claude app and Claude Code) to help
 understand the papers, plan the work, write and debug code and job scripts, analyse results and draft and edit this
 report. All design decisions, experiments and claims were checked by the authors, and every number in this report is
