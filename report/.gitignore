@@ -1,0 +1,11 @@
+*.aux
+*.log
+*.out
+*.bbl
+*.blg
+*.fdb_latexmk
+*.fls
+pg-*.png
+z*.png
+contact.png
+figures/*_preview*.png
