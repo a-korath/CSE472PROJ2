@@ -79,7 +79,7 @@ optimization. Our bonus is that idea, transplanted to LLM fine-tuning. Mechanist
 \textbf{LLMs and pretraining.} TextCloak \citep{zhao2026textcloak} targets LLM fine-tuning directly, training a
 reinforcement-learning policy that rewrites text and scoring rewrites with fine-tuned surrogate LLMs; it changes far more
 than two words. Its authors argue that a low surrogate training loss need not degrade a fine-tuned LLM, because of the
-LLM's pretraining priors, and so reward downstream degradation directly. Their experiments include Li et al.'s
+LLM's pretraining priors, and so reward downstream degradation directly. Their experiments include Li and Liu's
 min--min word substitutions as a baseline: on ARC-Challenge, across four LLMs it was not optimized against, it changes
 test accuracy by at most 2.6 points. \citet{li2026priors} show, in image classification, that pretrained models can
 learn genuine features despite unlearnable shortcuts, which defeats protection designed for models trained from scratch.
@@ -120,13 +120,13 @@ neighbours in Llama-3-8B's input-embedding space (cosine), restricted to single-
 covering about 95\% of the word occurrences in the training questions). The lists were computed from the input
 embeddings of the \texttt{NousResearch/Meta-Llama-3-8B} mirror, a re-upload of the same weights. For a word at position
 $p$ with embedding $\mathbf e_{\text{old}}$, the loss change from swapping in $\mathbf e_{\text{new}}$ is estimated as
-$(\mathbf e_{\text{new}}-\mathbf e_{\text{old}})^\top\nabla_{\mathbf e_p}\ell_{\text{ans}}$. Li et al.'s Eq.~5 scores
+$(\mathbf e_{\text{new}}-\mathbf e_{\text{old}})^\top\nabla_{\mathbf e_p}\ell_{\text{ans}}$. Li and Liu's Eq.~5 scores
 $\mathbf e_s^\top\nabla\ell$ only; within one position the two rankings are identical, but only the difference is a
 valid first-order estimate across positions, so we use it, as does \citet[Eq.~4]{zhao2026textcloak}. One backward pass
 scores every (position, neighbour) pair; we keep the 20 most negative, drop those failing the filters, re-score the
 survivors exactly, and accept the best only if it really lowers the loss. This is done greedily up to $k=2$ swaps, with
 the gradient recomputed after each. \emph{Why:} whole-word, one-token swaps are the only edits for which the HotFlip
-estimate is meaningful, keep token positions fixed, and stay readable. Two swaps per question (rather than Li et al.'s
+estimate is meaningful, keep token positions fixed, and stay readable. Two swaps per question (rather than Li and Liu's
 one) gives the optimizer room on short ARC questions.
 
 \textbf{Meaning filters.} Embedding neighbours mix synonyms with opposites: in an early test the search turned the
@@ -136,9 +136,9 @@ increase$\rightarrow$reduce, larger$\rightarrow$smaller), and (iii) require SBER
 \citep{reimers2019sbert} and GPT-2 perplexity $\le 1.2\times$ the original \citep{radford2019gpt2}, both measured
 against the \emph{original} example so they bound all $k$ edits together.
 
-\textbf{Loop and stopping rule.} Round 0 searches swaps against the untrained surrogate (Li et al.'s ``Error-min-0'').
+\textbf{Loop and stopping rule.} Round 0 searches swaps against the untrained surrogate (Li and Liu's ``Error-min-0'').
 Each round $r\ge1$ trains the surrogate for 2 epochs on round $r{-}1$'s protected set, records its training accuracy,
-then searches again starting from the original text. Li et al.\ stop when \emph{test} metrics stop changing, which tunes
+then searches again starting from the original text. Li and Liu stop when \emph{test} metrics stop changing, which tunes
 the protection on the test set; Huang et al.\ stop at high accuracy on the perturbed training data. Because an 8B model
 can reach 99\% training accuracy by memorization alone, we disabled early stopping and ran a fixed five rounds, saving
 every round.
@@ -206,7 +206,7 @@ the headroom any protection must remove. Qwen3-8B gains only +1.82 (91.04$\right
 
 \textbf{White-box (Llama-3-8B).} The final protected set gives 80.03 $\pm$ 0.92, within seed noise of random edits
 (80.18 $\pm$ 0.50) and of the round-0 set (79.81 $\pm$ 1.30): the differences are smaller than one standard deviation
-(protected vs.\ random $p=0.82$, round 0 vs.\ random $p=0.68$), while every edited set is clearly below clean
+(protected vs.\ random $p=0.83$, round 0 vs.\ random $p=0.68$), while every edited set is clearly below clean
 fine-tuning (protected vs.\ clean $p=0.02$, random vs.\ clean $p=0.005$). With three seeds the test has little power,
 so this shows no detectable difference, not proof of none. All three edited sets remove about half the fine-tuning
 gain, but optimization adds nothing detectable beyond the damage any two word swaps do.
@@ -265,12 +265,12 @@ palms\textcolor{red!70!black}{!} [A] \;B.\ wet palms \;C.\ palms covered with oi
 \end{table}
 
 \subsection{Analysis and Limitations}\label{sec:analysis}
-\textbf{What did not transfer, and why.} Li et al.\ found that effective substitutions are \emph{class-wise}: grouped by
+\textbf{What did not transfer, and why.} Li and Liu found that effective substitutions are \emph{class-wise}: grouped by
 label, the substituted words of different classes share nothing in their most effective (round-0) sets, and the five
 most frequent words cover 60--100\% of a class's substitutions. We ran the same analysis on our protected sets, grouping
 substituted words by answer letter. The overlap between letters is a Jaccard index of 0.07--0.08 in every round (random
-edits: 0.14). Jaccard alone is not decisive (Li et al.'s AG-News Error-min-1 set also scores 0.08), but the top-five
-share is: the top five words cover only 4--12\% of a letter's edits (Li et al.: 60--100\%). The swaps are
+edits: 0.14). Jaccard alone is not decisive (Li and Liu's AG-News Error-min-1 set also scores 0.08), but the top-five
+share is: the top five words cover only 4--12\% of a letter's edits (Li and Liu: 60--100\%). The swaps are
 \emph{sample-wise}. The surrogate fits the edited training text within one round (Figure~\ref{fig:rounds}), so each
 later search lowers the loss of a model that has memorized each edited question, exploiting that model's idiosyncrasies
 rather than creating a pattern that a fresh victim would find easier than the science itself. A fresh victim starts from
@@ -284,8 +284,12 @@ protect equally).
 strongly, the answer hint (Section~\ref{sec:bonus}), which affected both black-box models.
 
 \textbf{Limitations.} (1) \emph{Qwen ceiling.} Both Qwen variants already answer over 91\% of ARC-Challenge zero-shot and
-gain at most 1.82 points from fine-tuning, plausibly because ARC-style questions are in their pretraining data; they
-therefore cannot measure how much of a learnable gain protection removes, and our transfer claims for min--min rest on
+gain at most 1.82 points from fine-tuning. Part of this is our evaluation protocol: scoring only the answer-letter
+logit removes formatting errors, and on the same ARC-Challenge test split \citet{zhao2026textcloak} report Qwen3-8B at
+78.7\% zero-shot and 91.9\% after clean fine-tuning with generation-based evaluation, close to our clean 92.86\% but far
+below our zero-shot 91.04\%. Much of a typical fine-tuning gain is learning the answer format, which our protocol
+already credits; exposure to ARC-style questions during pretraining may also contribute, which we did not test. These
+victims therefore cannot measure how much of a learnable gain protection removes, and our transfer claims for min--min rest on
 the absence of an effect. (2) \emph{Meaning damage.} The filters still admit related words with different meanings:
 Table~\ref{tab:examples} shows a correct answer changed from ``Wood'' to ``Water'' and ``atomic mass'' changed to
 ``molecular mass''. A protected set that changes the science is partly corrupted rather than protected. We planned a
@@ -294,7 +298,7 @@ it. (3) \emph{Scale and scope.} One dataset of 1{,}119 questions, one surrogate,
 is trivially removable by an attacker who strips trailing punctuation.
 
 \subsection{Bonus: A One-Character Answer Hint}\label{sec:bonus}
-\textbf{Idea and hypothesis (pre-registered).} Li et al.'s strongest text protection was not optimized at all: it was a
+\textbf{Idea and hypothesis (pre-registered).} Li and Liu's strongest text protection was not optimized at all: it was a
 consistent marker. Our analysis suggests the min--min search is missing exactly such a pattern. We append \texttt{!} to
 the \emph{correct} choice of every training question; none of the 10{,}357 choices in ARC's train, validation and test
 splits ends with \texttt{!}, while about 40\% end with a period. Before running any victim, we committed this
