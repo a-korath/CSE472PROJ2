@@ -51,6 +51,9 @@ Checked against the mentor's guideline, the class announcement (Nov 2), the cite
 | TextCloak | Textual UE on ARC within 2.6 points | ✅ | Table 3 |
 | TextCloak | Qwen3-8B 78.7 → 91.9 | ✅ | Table 2 |
 | TextCloak | Same splits (1,119 / 299 / 1,172) | ✅ | Table 6 |
+| TextCloak | Rewrites whole inputs; ARC Qwen3-8B 91.9 → 37.7, below zero-shot | ✅ **(fixed)** | §5.1, App. D.1, Table 2. Replaced the unverifiable "changes far more than two words" |
+| TextCloak | Robust to punctuation stripping and paraphrasing | ✅ **(added)** | Fig. 4 (26.7 / 41.0 vs 37.7 undefended) |
+| TextCloak | Evaluation protocol | ✅ **(fixed)** | The paper does not say "generation-based"; now "under their protocol", and our format explanation is worded as a suggestion |
 | When Priors Backfire, ICLR 2026 | Authors | ✅ | Paper |
 | When Priors Backfire, ICLR 2026 | Image classification only | ✅ | Paper |
 | When Priors Backfire, ICLR 2026 | Pretrained models learn genuine features despite UE shortcuts | ✅ | Abstract, Fig. 1 |
@@ -105,4 +108,4 @@ Checked against the mentor's guideline, the class announcement (Nov 2), the cite
 
 1. Arjun confirms the AI-use statement covers every tool he used.
 2. Decide who uploads to Canvas (group or individual), and open the file after uploading.
-3. Read the TextCloak sentences (§2, §4.3 Limitations) once more, since the mentor wrote that paper.
+3. ~~Read the TextCloak sentences~~ Done: every TextCloak sentence was checked against the paper and three were corrected (see §2).

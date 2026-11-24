@@ -78,8 +78,9 @@ optimization. Our bonus is that idea, transplanted to LLM fine-tuning. Mechanist
 \emph{shortcut learning} \citep{geirhos2020shortcut}.
 
 \textbf{LLMs and pretraining.} TextCloak \citep{zhao2026textcloak} targets LLM fine-tuning directly, training a
-reinforcement-learning policy that rewrites text and scoring rewrites with fine-tuned surrogate LLMs; it changes far more
-than two words. Its authors argue that a low surrogate training loss need not degrade a fine-tuned LLM, because of the
+reinforcement-learning policy that rewrites text and scoring rewrites with fine-tuned surrogate LLMs. It rewrites each whole
+input rather than swapping a few words, and on ARC-Challenge it lowers fine-tuned Qwen3-8B from 91.9\% to 37.7\%,
+below zero-shot. Its authors argue that a low surrogate training loss need not degrade a fine-tuned LLM, because of the
 LLM's pretraining priors, and so reward downstream degradation directly. Their experiments include Li and Liu's
 min--min word substitutions as a baseline: on ARC-Challenge, across four LLMs it was not optimized against, it changes
 test accuracy by at most 2.6 points. \citet{li2026priors} show, in image classification, that pretrained models can
@@ -285,11 +286,11 @@ protect equally).
 strongly, the answer hint (Section~\ref{sec:bonus}), which affected both black-box models.
 
 \textbf{Limitations.} (1) \emph{Qwen ceiling.} Both Qwen variants already answer over 91\% of ARC-Challenge zero-shot and
-gain at most 1.82 points from fine-tuning. Part of this is our evaluation protocol: scoring only the answer-letter
-logit removes formatting errors, and on the same ARC-Challenge test split \citet{zhao2026textcloak} report Qwen3-8B at
-78.7\% zero-shot and 91.9\% after clean fine-tuning with generation-based evaluation, close to our clean 92.86\% but far
-below our zero-shot 91.04\%. Much of a typical fine-tuning gain is learning the answer format, which our protocol
-already credits; exposure to ARC-style questions during pretraining may also contribute, which we did not test. These
+gain at most 1.82 points from fine-tuning. Part of this is likely our evaluation protocol: scoring only the
+answer-letter logits rules out formatting errors. On the same ARC-Challenge test split \citet{zhao2026textcloak} report Qwen3-8B at
+78.7\% zero-shot and 91.9\% after clean fine-tuning under their protocol, close to our clean 92.86\% but far
+below our zero-shot 91.04\%, suggesting that much of their fine-tuning gain is learning the answer format, which
+our protocol already credits; exposure to ARC-style questions during pretraining may also contribute, which we did not test. These
 victims therefore cannot measure how much of a learnable gain protection removes, and our transfer claims for min--min rest on
 the absence of an effect. (2) \emph{Meaning damage.} The filters still admit related words with different meanings:
 Table~\ref{tab:examples} shows a correct answer changed from ``Wood'' to ``Water'' and ``atomic mass'' changed to
@@ -317,7 +318,8 @@ marker their predictions become erratic, as the large seed variance shows (Llama
 
 \section{Future Work}
 \textbf{Robustness of the hint.} The obvious attack is normalization: stripping punctuation, paraphrasing, or
-deduplicating text before training. Testing the hint (and less visible variants such as rare-but-natural words or
+deduplicating text before training. TextCloak's rewrites keep most of their effect under punctuation stripping and paraphrasing
+\citep{zhao2026textcloak}; a punctuation hint, as built here, would not. Testing the hint (and less visible variants such as rare-but-natural words or
 Unicode-equivalent characters) against such preprocessing is the most important next step toward a publishable result.
 \textbf{Class-wise min--min.} Our diagnosis suggests constraining the optimizer to shared, answer-correlated edits, for
 example one substitution set per answer letter, or restricting edits to the correct choice, so that it searches for a
