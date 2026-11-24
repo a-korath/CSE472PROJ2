@@ -2,6 +2,7 @@
 \usepackage{iclr2027_conference,times}
 \input{math_commands.tex}
 \usepackage[hidelinks]{hyperref}
+\hypersetup{pdftitle={Unlearnable Text for LLM Fine-Tuning: Min-Min Word Swaps Fail, a One-Character Hint Works},pdfauthor={Aryan Patyal and Arjun Korath},pdfsubject={CSE 472 Social Media Mining, Project 2.5 (Fall 2026)}}
 \usepackage{url}
 \usepackage{graphicx}
 \usepackage{booktabs}
@@ -292,9 +293,8 @@ already credits; exposure to ARC-style questions during pretraining may also con
 victims therefore cannot measure how much of a learnable gain protection removes, and our transfer claims for min--min rest on
 the absence of an effect. (2) \emph{Meaning damage.} The filters still admit related words with different meanings:
 Table~\ref{tab:examples} shows a correct answer changed from ``Wood'' to ``Water'' and ``atomic mass'' changed to
-``molecular mass''. A protected set that changes the science is partly corrupted rather than protected. We planned a
-hand-labelled estimate of how often this happens (50 protected and 50 random edits, two annotators) but did not complete
-it. (3) \emph{Scale and scope.} One dataset of 1{,}119 questions, one surrogate, $k=2$, three seeds. (4) The bonus hint
+``molecular mass''. A protected set that changes the science is partly corrupted rather than protected. SBERT and
+perplexity do not tell us how often this happens; a human-annotated estimate is left to future work. (3) \emph{Scale and scope.} One dataset of 1{,}119 questions, one surrogate, $k=2$, three seeds. (4) The bonus hint
 is trivially removable by an attacker who strips trailing punctuation.
 
 \subsection{Bonus: A One-Character Answer Hint}\label{sec:bonus}
@@ -331,7 +331,7 @@ motivating threat, partial protection (only some users protect), and the hand-la
 We thank our mentor Chengshuai Zhao for guidance. Experiments used ASU Research Computing's Sol supercomputer
 \citep{jennewein2023sol}. Software: PyTorch \citep{paszke2019pytorch}, Hugging Face Transformers
 \citep{wolf2020transformers}, PEFT \citep{mangrulkar2022peft}, Datasets \citep{lhoest2021datasets},
-Accelerate \citep{gugger2022accelerate}, Sentence-Transformers \citep{reimers2019sbert}, NLTK/WordNet
+Accelerate \citep{gugger2022accelerate}, Hugging Face Hub \citep{hf2020hub}, safetensors \citep{hf2022safetensors}, Sentence-Transformers \citep{reimers2019sbert}, NLTK/WordNet
 \citep{bird2009nltk,miller1995wordnet}, SciPy \citep{virtanen2020scipy} and Matplotlib \citep{hunter2007matplotlib}.
 \textbf{Use of generative AI:} we used Anthropic's Claude (Claude Opus models, via the Claude app and Claude Code) to help
 understand the papers, plan the work, write and debug code and job scripts, analyse results and draft and edit this
